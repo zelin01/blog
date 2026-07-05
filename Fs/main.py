@@ -8,8 +8,19 @@ import sqlite3
 import os
 from typing import Generator, Optional
 from datetime import datetime, timedelta
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["*"],
+    allow_methods = ["*"],
+    allow_headers = ["*"],
+)
+
+app.mount("/static", StaticFiles(directory="static"), name = "static")
 
 DB_FILE = os.path.join(os.path.dirname(__file__), "blog.db")
 
