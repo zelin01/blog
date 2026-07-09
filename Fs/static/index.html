@@ -2,106 +2,379 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>迷你博客</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 0 20px; }
-        input, textarea { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
-        button { padding: 8px 16px; cursor: pointer; margin-right: 5px; }
-        .post { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .post h3 { margin: 0 0 5px; }
-        #auth-box { background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
-        .msg { font-size: 14px; margin: 5px 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 头部 */
+        header {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        header h1 {
+            font-size: 24px;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        /* 用户区域 */
+        .user-bar {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            color: #555;
+            font-size: 14px;
+        }
+
+        .user-info span {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* 表单卡片 */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .card h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card h3::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 18px;
+            background: #4a90d9;
+            border-radius: 2px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4a90d9;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #3a7bc8;
+        }
+
+        .btn-danger {
+            background: #fff;
+            color: #e74c3c;
+            border: 1px solid #e0e0e0;
+        }
+
+        .btn-danger:hover {
+            background: #fdf2f2;
+            border-color: #e74c3c;
+        }
+
+        .btn-small {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+
+        .msg {
+            font-size: 13px;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+
+        .msg.success { color: #27ae60; }
+        .msg.error { color: #e74c3c; }
+
+        /* 双栏表单 */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 480px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        /* 文章列表 */
+        .post {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .post:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .post-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            line-height: 1.4;
+        }
+
+        .post-content {
+            color: #555;
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* 隐藏 */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <!-- 未登录显示 -->
-    <div id="auth-box">
-        <h3>用户注册</h3>
-        <input id="reg_username" placeholder="用户名">
-        <input id="reg_password" type="password" placeholder="密码">
-        <button onclick="register()">注册</button>
-        <p id="reg_msg" class="msg"></p>
+    <div class="container">
+        <!-- 头部 -->
+        <header>
+            <h1>📝 迷你博客</h1>
+            <p>一个简单的博客系统</p>
+        </header>
 
-        <hr>
+        <!-- 用户状态栏 -->
+        <div class="user-bar" id="user-bar">
+            <div class="user-info" id="user-info">
+                请先登录后发布文章
+            </div>
+            <div>
+                <button class="btn btn-danger btn-small hidden" id="btn-logout" onclick="logout()">退出</button>
+            </div>
+        </div>
 
-        <h3>用户登录</h3>
-        <input id="login_username" placeholder="用户名">
-        <input id="login_password" type="password" placeholder="密码">
-        <button onclick="login()">登录</button>
-        <p id="login_msg" class="msg"></p>
+        <!-- 注册/登录 -->
+        <div class="card" id="auth-card">
+            <div class="form-row">
+                <div>
+                    <h3>注册</h3>
+                    <input id="reg-username" placeholder="用户名">
+                    <input id="reg-password" type="password" placeholder="密码">
+                    <button class="btn btn-primary" onclick="register()">注册</button>
+                    <p class="msg" id="reg-msg"></p>
+                </div>
+                <div>
+                    <h3>登录</h3>
+                    <input id="login-username" placeholder="用户名">
+                    <input id="login-password" type="password" placeholder="密码">
+                    <button class="btn btn-primary" onclick="login()">登录</button>
+                    <p class="msg" id="login-msg"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 发布文章 -->
+        <div class="card hidden" id="post-card">
+            <h3>发布文章</h3>
+            <input id="post-title" placeholder="文章标题">
+            <textarea id="post-content" placeholder="文章内容..."></textarea>
+            <button class="btn btn-primary" onclick="createPost()">发布</button>
+        </div>
+
+        <!-- 文章列表 -->
+        <div>
+            <div class="card" style="background: transparent; box-shadow: none; padding: 0 0 8px;">
+                <h3>文章列表</h3>
+            </div>
+            <div id="posts"></div>
+        </div>
     </div>
-
-    <!-- 已登录显示 -->
-    <div id="user-box" style="display: none;">
-        <p>欢迎，<span id="current_user"></span>！
-        <button onclick="logout()">退出</button></p>
-    </div>
-
-    <hr>
-
-    <h1>迷你博客</h1>
-    <h3>发布文章</h3>
-    <input id="title" placeholder="标题">
-    <textarea id="content" placeholder="内容" rows="3"></textarea>
-    <button onclick="createPost()">发布</button>
-
-    <h3>文章列表</h3>
-    <div id="posts"></div>
 
     <script>
         const API = "http://127.0.0.1:8000";
 
+        // ========== 工具函数 ==========
+        function $(id) { return document.getElementById(id); }
+
+        function showMsg(id, text, isError) {
+            const el = $(id);
+            el.textContent = text;
+            el.className = "msg " + (isError ? "error" : "success");
+        }
+
+        function getToken() { return localStorage.getItem("token"); }
+        function getUsername() { return localStorage.getItem("username"); }
+
+        // ========== 更新 UI 状态 ==========
+        function updateUI() {
+            const token = getToken();
+            const username = getUsername();
+
+            if (token && username) {
+                // 已登录
+                $("auth-card").classList.add("hidden");
+                $("post-card").classList.remove("hidden");
+                $("btn-logout").classList.remove("hidden");
+                $("user-info").innerHTML = `欢迎，<span>${username}</span>！`;
+            } else {
+                // 未登录
+                $("auth-card").classList.remove("hidden");
+                $("post-card").classList.add("hidden");
+                $("btn-logout").classList.add("hidden");
+                $("user-info").textContent = "请先登录后发布文章";
+            }
+        }
+
         // ========== 注册 ==========
         async function register() {
-            const username = document.getElementById("reg_username").value;
-            const password = document.getElementById("reg_password").value;
+            const username = $("reg-username").value.trim();
+            const password = $("reg-password").value;
 
-            const res = await fetch(`${API}/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
-            });
+            if (!username || !password) {
+                showMsg("reg-msg", "请填写完整", true);
+                return;
+            }
 
-            const data = await res.json();
-            const msg = document.getElementById("reg_msg");
+            try {
+                const res = await fetch(`${API}/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
 
-            if (res.ok) {
-                msg.style.color = "green";
-                msg.innerText = "注册成功，请登录";
-            } else {
-                msg.style.color = "red";
-                msg.innerText = data.detail || "注册失败";
+                if (res.ok) {
+                    showMsg("reg-msg", "注册成功，请登录", false);
+                    $("reg-username").value = "";
+                    $("reg-password").value = "";
+                } else {
+                    showMsg("reg-msg", data.detail || "注册失败", true);
+                }
+            } catch (e) {
+                showMsg("reg-msg", "网络错误", true);
             }
         }
 
         // ========== 登录 ==========
         async function login() {
-            const username = document.getElementById("login_username").value;
-            const password = document.getElementById("login_password").value;
+            const username = $("login-username").value.trim();
+            const password = $("login-password").value;
 
-            // OAuth2 标准格式：form-urlencoded
-            const formData = new URLSearchParams();
-            formData.append("username", username);
-            formData.append("password", password);
+            if (!username || !password) {
+                showMsg("login-msg", "请填写完整", true);
+                return;
+            }
 
-            const res = await fetch(`${API}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: formData
-            });
+            try {
+                const formData = new URLSearchParams();
+                formData.append("username", username);
+                formData.append("password", password);
 
-            const data = await res.json();
-            const msg = document.getElementById("login_msg");
+                const res = await fetch(`${API}/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData
+                });
+                const data = await res.json();
 
-            if (res.ok) {
-                localStorage.setItem("token", data.access_token);
-                localStorage.setItem("username", username);
-                showUser(username);
-                msg.style.color = "green";
-                msg.innerText = "登录成功";
-            } else {
-                msg.style.color = "red";
-                msg.innerText = data.detail || "登录失败";
+                if (res.ok) {
+                    localStorage.setItem("token", data.access_token);
+                    localStorage.setItem("username", username);
+                    showMsg("login-msg", "登录成功", false);
+                    updateUI();
+                    loadPosts();
+                } else {
+                    showMsg("login-msg", data.detail || "登录失败", true);
+                }
+            } catch (e) {
+                showMsg("login-msg", "网络错误", true);
             }
         }
 
@@ -109,67 +382,108 @@
         function logout() {
             localStorage.removeItem("token");
             localStorage.removeItem("username");
-            location.reload();
+            updateUI();
+            loadPosts();
         }
 
-        // ========== 显示登录状态 ==========
-        function showUser(username) {
-            document.getElementById("auth-box").style.display = "none";
-            document.getElementById("user-box").style.display = "block";
-            document.getElementById("current_user").innerText = username;
-        }
-
-        // ========== 发布文章（带 Token） ==========
+        // ========== 发布文章 ==========
         async function createPost() {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("请先登录");
-                return;
-            }
+            const title = $("post-title").value.trim();
+            const content = $("post-content").value.trim();
+            const token = getToken();
 
-            const title = document.getElementById("title").value;
-            const content = document.getElementById("content").value;
+            if (!token) { alert("请先登录"); return; }
+            if (!title) { alert("请输入标题"); return; }
 
-            const res = await fetch(`${API}/posts`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ title, content })
-            });
+            try {
+                const res = await fetch(`${API}/posts`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title, content })
+                });
 
-            if (res.ok) {
-                document.getElementById("title").value = "";
-                document.getElementById("content").value = "";
-                loadPosts();
-            } else {
-                const data = await res.json();
-                alert("发布失败：" + (data.detail || "未知错误"));
+                if (res.ok) {
+                    $("post-title").value = "";
+                    $("post-content").value = "";
+                    loadPosts();
+                } else {
+                    const data = await res.json();
+                    alert("发布失败：" + (data.detail || "未知错误"));
+                }
+            } catch (e) {
+                alert("网络错误");
             }
         }
 
-        // ========== 获取文章列表 ==========
+        // ========== 删除文章 ==========
+        async function deletePost(id) {
+            if (!confirm("确定删除这篇文章？")) return;
+            const token = getToken();
+            if (!token) { alert("请先登录"); return; }
+
+            try {
+                const res = await fetch(`${API}/posts/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    loadPosts();
+                } else {
+                    alert("删除失败");
+                }
+            } catch (e) {
+                alert("网络错误");
+            }
+        }
+
+        // ========== 加载文章 ==========
         async function loadPosts() {
-            const res = await fetch(`${API}/posts`);
-            const posts = await res.json();
-            const html = posts.map(p => `
-                <div class="post">
-                    <h3>${p.title}</h3>
-                    <p>${p.content}</p>
-                    <small>ID: ${p.id}</small>
-                </div>
-            `).join("");
-            document.getElementById("posts").innerHTML = html || "<p>暂无文章</p>";
+            try {
+                const res = await fetch(`${API}/posts`);
+                const posts = await res.json();
+                const container = $("posts");
+
+                if (posts.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty">
+                            <div class="empty-icon">📝</div>
+                            <p>还没有文章，登录后发布第一篇吧</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const token = getToken();
+                container.innerHTML = posts.map(p => `
+                    <div class="post">
+                        <div class="post-header">
+                            <div class="post-title">${escapeHtml(p.title)}</div>
+                            ${token ? `<button class="btn btn-danger btn-small" onclick="deletePost(${p.id})">删除</button>` : ''}
+                        </div>
+                        <div class="post-content">${escapeHtml(p.content)}</div>
+                        <div class="post-meta">
+                            <span>ID: ${p.id}</span>
+                        </div>
+                    </div>
+                `).join("");
+            } catch (e) {
+                $("posts").innerHTML = `<div class="empty"><p>加载失败，请刷新重试</p></div>`;
+            }
         }
 
-        // 页面加载时检查登录状态
-        const savedUser = localStorage.getItem("username");
-        if (savedUser) {
-            showUser(savedUser);
+        // 防 XSS
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
         }
 
-        // 加载文章
+        // 初始化
+        updateUI();
         loadPosts();
     </script>
 </body>
