@@ -94,7 +94,7 @@ def init_db():
                            user_id INT NOT NULL,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCAD) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                        """)
         conn.commit()
     print("数据库初始化完成")

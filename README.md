@@ -1,8 +1,8 @@
 # 个人博客后端
-基于 FastAPI + SQLite 的 RESTful API 服务， 支持用户认证和文章 CRUD。
+基于 FastAPI + MySQL 的 RESTful API 服务， 支持用户认证和文章 CRUD。
 ## 技术栈
 - **框架**：FastAPI
-- **数据库**：SQLite
+- **数据库**：MySQL
 - **认证**：JWT + bcrypt
 - **部署**：Uvicorn
 
