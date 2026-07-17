@@ -4,7 +4,7 @@
 - **框架**：FastAPI
 - **数据库**：MySQL
 - **认证**：JWT + bcrypt
-- **部署**：Uvicorn
+- **部署**：uvicorn
 
 ## 功能特性
 - 用户注册/登录（密码 bcrypt 哈希）
