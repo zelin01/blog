@@ -11,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import mysql.connector
 from mysql.connector import pooling
 from contextlib import contextmanager
+import redis
+import json
 
 app = FastAPI()
 
@@ -21,13 +23,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+redis_client = redis.Redis(
+    host = 'localhost',
+    port = 6379,
+    db = 0,
+    decode_responses = True
+)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-DB_HOST = "localhost"
-DB_PORT = 3306
-DB_USER = "bloguser"
-DB_PASSWORD = "060427"
-DB_NAME = "blog_db"
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_USER = os.getenv("DB_USER", "bloguser")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "060427")
+DB_NAME = os.getenv("DB_NAME", "blog_db")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-only")
 ALGORITHM = "HS256"
@@ -219,31 +228,33 @@ def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_cu
     conn.commit()
     post_id = cursor.lastrowid
 
-    return {
-        "id": post_id,
-        "title": post.title,
-        "content": post.content,
-        "user_id": current_user["id"],
-        "author": current_user["username"]
-    }
-
+    redis_client.delete("posts:list")
+    return {"message": "created", "id": post_id}
 
 @app.get("/posts")
 def get_posts(db=Depends(get_db_conn)):
+    cached = redis_client.get("posts:list")
+    if cached:
+        return json.loads(cached)
     conn, cursor = db
 
     cursor.execute("""
                    SELECT p.*, u.username as author
                    FROM posts p
-                            JOIN users u ON p.user_id = u.id
+                   JOIN users u ON p.user_id = u.id
                    ORDER BY p.created_at DESC
                    """)
     rows = cursor.fetchall()
+    redis_client.setex("posts:list",300, json.dumps(rows, default=str))
     return rows
 
 
 @app.get("/posts/{post_id}")
 def get_post(post_id: int, db=Depends(get_db_conn)):
+    cache_key = f"post:{post_id}"
+    cached = redis_client.get(cache_key)
+    if cached:
+        return json.loads(cached)
     conn, cursor = db
 
     cursor.execute("""
@@ -256,11 +267,17 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
 
     if row is None:
         raise HTTPException(status_code=404, detail="Post not found")
+    redis_client.setex(cache_key, 600, json.dumps(rows, default=str))
     return row
+
 
 
 @app.put("/posts/{post_id}")
 def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
+    redis_client.delete(f"post:{post_id}")
+    redis_client.delete("posts:list")
+
+    return {"message": "updated"}
     conn, cursor = db
 
     cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
@@ -281,6 +298,10 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
 
 @app.delete("/posts/{post_id}")
 def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
+    redis_client.delete(f"post:{post_id}")
+    redis_client.delete("posts:list")
+
+    return {"message": "deleted"}
     conn, cursor = db
 
     cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
