@@ -104,7 +104,7 @@ def init_db():
                            hashed_password VARCHAR(255) NOT NULL,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                        """)
-        创建文章表
+        # 创建文章表
         cursor.execute("""
                        CREATE TABLE IF NOT EXISTS posts
                        (
@@ -298,11 +298,12 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
 # 更新文章
 @app.put("/posts/{post_id}")
 def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
+    conn, cursor = db
     redis_client.delete(f"post:{post_id}")
     redis_client.delete("posts:list")
 
     return {"message": "updated"}
-    conn, cursor = db
+
 
     cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
     row = cursor.fetchone()
@@ -322,11 +323,12 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
 # 删除文章
 @app.delete("/posts/{post_id}")
 def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
+    conn, cursor = db
     redis_client.delete(f"post:{post_id}")
     redis_client.delete("posts:list")
 
     return {"message": "deleted"}
-    conn, cursor = db
+
 
     # 查询文章并验证权限
     cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
