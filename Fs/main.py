@@ -1,6 +1,8 @@
 import os
+import uuid
+
 import bcrypt
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from jose import jwt, JWTError
@@ -11,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import mysql.connector
 from mysql.connector import pooling
 from contextlib import contextmanager
+from pathlib import Path
 import redis
 import json
 
@@ -36,6 +39,16 @@ redis_client = redis.Redis(
 #引入静态文件
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+UPLOAD_DIR = Path("static/uploads")
+UPLOAD_DIR.mkdir(parents = True, exist_ok = True)
+
+ALLOWED_IMAGE_TYPES = {
+    "image/png",
+    "image/jpg",
+    "image/jpeg",
+    "image/gif",
+}
+MAX_FILE_SIZE = 5 * 1024 * 1024
 #数据库配置
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
@@ -64,7 +77,6 @@ db_pool = pooling.MySQLConnectionPool(
     charset='utf8mb4',
     collation='utf8mb4_unicode_ci'
 )
-
 
 def create_database_if_not_exists():
     conn = mysql.connector.connect(
@@ -116,6 +128,7 @@ def init_db():
                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                        """)
+        
         conn.commit()
     print("数据库初始化完成")
 
@@ -192,6 +205,39 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+async def save_upload_file(file: UploadFile) -> str:
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail = f"Only {', '.join(t.split('/')[-1] for t in ALLOWED_IMAGE_TYPES)} allowed"
+        )
+
+    contents = await  file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail = f"File too large, max {MAX_FILE_SIZE} bytes"
+        )
+
+    file_ext = file.filename.split(".")[-1].lower()
+    unique_name = f"{uuid.uuid4().hex}.{file_ext}"
+    file_path = UPLOAD_DIR / unique_name
+
+    with open(file_path, "wb") as f:
+        f.write(contents)
+
+    return f"/static/uploads/{unique_name}"
+
+def delete_upload_file(image_url: str) -> bool:
+    if not image_url:
+        return False
+
+    file_path = Path("static") / image_url.lstrip("/static/")
+    if file_path.exists():
+        file_path.unlink()
+        return True
+    return False
+
 #用户注册接口
 @app.post("/register")
 def register(user: UserRegister, db=Depends(get_db_conn)):
@@ -235,12 +281,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get_db_co
 
 # 文章相关接口
 @app.post("/posts")
-def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
+async def create_post(post: Post, image_url: str = None, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
     conn, cursor = db
+    image_url = None
 
+    if file:
+        image_url = await save_upload_file(file)
     #插入文章， user_id 为当前登录用户
     cursor.execute(
-        "INSERT INTO posts (title, content, user_id) VALUES (%s, %s, %s)",
+        "INSERT INTO posts (title, content, image_url, user_id) VALUES (%s, %s, %s, %s)",
         (post.title, post.content, current_user["id"])
     )
     conn.commit()
@@ -248,8 +297,19 @@ def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_cu
 
     # 清除文章列表缓存（因为新增了文章）
     redis_client.delete("posts:list")
-    return {"message": "created", "id": post_id}
+    return {"message": "created", "id": post_id, "title": title, "image_url": image_url}
 
+@app.post("/upload")
+async def upload_image(
+        file: UploadFile = File(...),
+        current_user=Depends(get_current_user)
+):
+    imae_url = await save_upload_file(file)
+
+    return{
+        "message": "Upload successful",
+        "image_url": imae_url
+    }
 @app.get("/posts")
 def get_posts(db=Depends(get_db_conn)):
 
@@ -283,8 +343,7 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
 
     cursor.execute("""
                    SELECT p.*, u.username as author
-                   FROM posts p
-                            JOIN users u ON p.user_id = u.id
+                   FROM posts p JOIN users u ON p.user_id = u.id
                    WHERE p.id = %s
                    """, (post_id,))
     row = cursor.fetchone()
@@ -297,7 +356,7 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
 
 # 更新文章
 @app.put("/posts/{post_id}")
-def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
+async def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
     conn, cursor = db
     redis_client.delete(f"post:{post_id}")
     redis_client.delete("posts:list")
@@ -310,11 +369,19 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
     if row["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to edit this post")
 
+
+    if file:
+        delete_upload_file(image_url)
+        image_url = await save_upload_file(file)
     cursor.execute(
-        "UPDATE posts SET title = %s, content = %s WHERE id = %s",
-        (post.title, post.content, post_id)
+        "UPDATE posts SET title = %s, content = %s, image_url = %s WHERE id = %s",
+        (post.title, post.content, post_id, image_url)
     )
     conn.commit()
+
+    redis_client.delete(f"post:{post_id}")
+    redis_client.delete("posts:list")
+
     return {"message": "updated", "id": post_id}
 
 # 删除文章
@@ -333,8 +400,13 @@ def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_
     if row["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
 
+    delete_upload_file(row.get("image_url"))
     cursor.execute("DELETE FROM posts WHERE id = %s", (post_id,))
     conn.commit()
+
+    redis_client.delete(f"post:{post_id}")
+    redis_client.delete("posts:list")
+
     return {"message": "deleted", "id": post_id}
 
 
