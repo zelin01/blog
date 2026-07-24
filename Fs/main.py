@@ -302,9 +302,6 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
     redis_client.delete(f"post:{post_id}")
     redis_client.delete("posts:list")
 
-    return {"message": "updated"}
-
-
     cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
     row = cursor.fetchone()
 
@@ -326,9 +323,6 @@ def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_
     conn, cursor = db
     redis_client.delete(f"post:{post_id}")
     redis_client.delete("posts:list")
-
-    return {"message": "deleted"}
-
 
     # 查询文章并验证权限
     cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
