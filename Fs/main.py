@@ -1,9 +1,11 @@
 import os
 import uuid
 import shutil
+from asyncio import wait
+
+import bcrypt
 
 from pathlib import Path
-import bcrypt
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import FileResponse
@@ -338,7 +340,7 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
 
     if row is None:
         raise HTTPException(status_code=404, detail="Post not found")
-    redis_client.setex(cache_key, 600, json.dumps(rows, default=str))
+    redis_client.setex(cache_key, 600, json.dumps(row, default=str))
     return row
 
 
@@ -477,9 +479,16 @@ def delete_attachment(
     if att["user_id"] != current_user["id"] and att["post_owner_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this attachment")
 
-    file_path = Path(att["file_path"])
-    if file_path.exists():
-        file_path.unlink()
+    try:
+        file_path = Path(att["file_path"])
+        if file_path.exists():
+            file_path.unlink()  # 删除文件
+            print(f"[INFO] Deleted file: {file_path}")
+        else:
+            print(f"[WARN] File not found, skipping: {file_path}")
+    except Exception as e:
+        # 文件删不掉不影响数据库操作，记录日志即可
+        print(f"[ERROR] Failed to delete file: {e}")
 
     # 删除数据库记录
     cursor.execute("DELETE FROM attachments WHERE id = %s", (attachment_id,))
@@ -505,14 +514,14 @@ def get_attachment_file(attachment_id: int, db=Depends(get_db_conn)):
         media_type=row["content_type"]
     )
 
-@app.post("/files/")
+@app.post("/files/", deprecated=True)
 async def creat_file(file: Annotated[bytes | None, File()] = None):
     if not file:
         return {"message": "No file set"}
     return {"file_size": len(file)}
 
 
-@app.post("/uploaadfile/")
+@app.post("/uploaadfile/", deprecated=True)
 async def creat_upload_file(file: UploadFile | None = None):
     if not file:
         return {"message": "No file set"}
