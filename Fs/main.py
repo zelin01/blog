@@ -51,7 +51,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-MAX_FILR_SIZE = 5 * 1024 * 1024
+MAX_FILE_SIZE = 5 * 1024 * 1024
 
 #数据库配置
 DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -382,11 +382,22 @@ def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_
     if row["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
 
+    cursor.execute("SELECT file_path FROM attachments WHERE post_id = %s", (post_id,))
+    for att in cursor.fetchall():
+        try:
+            path = Path(att["file_path"])
+            if path.exists():
+                path.unlink()
+        except Exception:
+            pass
+
     cursor.execute("DELETE FROM posts WHERE id = %s", (post_id,))
     conn.commit()
+
+    clear_post_cache(post_id)
     return {"message": "deleted", "id": post_id}
 
-@app.post("/post/{post_id/upload")
+@app.post("/post/{post_id}/upload")
 async def upload_image(
         post_id: int,
         file: UploadFile = File(..., description="Upload image"),
@@ -418,6 +429,7 @@ async def upload_image(
                     file_path.stat().st_size,
                     file.content_type
                     ))
+
     conn.commit()
     attchment_id = cursor.lastrowid
 
