@@ -149,6 +149,33 @@ def init_db():
                         INDEX idx_post_id (post_id))
                         ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                         """)
+        cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS categories (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR (50) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uk_name (name))
+                    ENGINE = innoDB DEFAULT CHARSET=utf8mb4
+        """)
+        cursor.execute("""
+                       SELECT COUNT(*) as cnt
+                       FROM information_schema.COLUMNS
+                       WHERE TABLE_SCHEMA = %s
+                       AND TABLE_NAME = 'posts'
+                       AND COLUMN_NAME = 'category_id'
+                       """, (DB_NAME,))
+        if cursor.fetchone()["cnt"] == 0:
+            cursor.execute("""
+                           ALTER TABLE posts
+                           ADD COLUMN category_id INT DEFAULT NULL,
+                           ADD CONSTRAINT fk_post_category
+                           FOREIGN KEY (category_id) REFERENCES categories(id)
+                           ON DELETE SET NULL
+                           """)
+        cursor.execute("""
+                       INSERT IGNORE INTO categories (name)
+                       VALUES ('技术'), ('生活'), ('随笔')
+                       """)
         conn.commit()
     print("数据库初始化完成")
 
@@ -232,6 +259,7 @@ def clear_post_cache(post_id: int):
 class Post(BaseModel):
     title: str
     content: str
+    category_id: Optional[int] = None
 
 
 class UserRegister(BaseModel):
@@ -288,10 +316,16 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get_db_co
 @app.post("/posts")
 def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
     conn, cursor = db
+
+    if post.category_id:
+        cursor.execute("SELECT id FROM categories WHERE id = %s", (post.category_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Category does not exist")
+
     #插入文章， user_id 为当前登录用户
     cursor.execute(
-        "INSERT INTO posts (title, content, user_id) VALUES (%s, %s, %s)",
-        (post.title, post.content, current_user["id"])
+        "INSERT INTO posts (title, content, user_id, category_id) VALUES (%s, %s, %s, %s)",
+        (post.title, post.content, current_user["id"], post.category_id)
     )
     conn.commit()
     post_id = cursor.lastrowid
@@ -300,8 +334,8 @@ def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_cu
     return {"message": "created", "id": post_id}
 
 @app.get("/posts")
-def get_posts(db=Depends(get_db_conn)):
-
+def get_posts(category_id: optional[int] = None,db=Depends(get_db_conn)):
+    cache_key = f"posts:list:cat:{category_id}" if category_id else "posts:list"
     # 尝试从redis 缓存获取
     cached = redis_client.get("posts:list")
     if cached:
@@ -309,12 +343,23 @@ def get_posts(db=Depends(get_db_conn)):
     conn, cursor = db
 
     #缓存未命中，查询数据库
-    cursor.execute("""
-                   SELECT p.*, u.username as author
-                   FROM posts p
-                   JOIN users u ON p.user_id = u.id
-                   ORDER BY p.created_at DESC
-                   """)
+    if category_id:
+        cursor.execute("""
+                       SELECT p.*, u.username as author, c.name as category_name
+                       FROM posts p
+                       JOIN users u ON p.user_id = u.id
+                       LEFT JOIN categories c ON p.category_id = c.id
+                       WHERE p.category_id = %s
+                       ORDER BY p.created_at DESC
+                       """, (category_id,))
+    else:
+        cursor.execute("""
+                       SELECT p.*, u.username as author, c.name as category_name
+                       FROM posts p
+                       JOIN users u ON p.user_id = u.id
+                       LEFT JOIN categories c ON p.category_id = c.id
+                       ORDER BY p.created_at DESC
+                       """)
     rows = cursor.fetchall()
 
     #写入 Redis 缓存， 设置5 分钟过期时间
@@ -331,15 +376,17 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
     conn, cursor = db
 
     cursor.execute("""
-                   SELECT p.*, u.username as author
+                   SELECT p.*, u.username as author, c.name as category_name
                    FROM posts p
-                            JOIN users u ON p.user_id = u.id
+                   JOIN users u ON p.user_id = u.id
+                   LEFT  JOIN categories c ON p.category_id = c.id
                    WHERE p.id = %s
                    """, (post_id,))
-    row = cursor.fetchone()
+    row = cursor.fetchall()
 
     if row is None:
         raise HTTPException(status_code=404, detail="Post not found")
+
     redis_client.setex(cache_key, 600, json.dumps(row, default=str))
     return row
 
@@ -351,7 +398,7 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
     redis_client.delete("posts:list")
     conn, cursor = db
 
-    cursor.execute("SELECT user_id FROM posts WHERE id = %s", (post_id,))
+    cursor.execute("SELECT user_id, category_id  FROM posts WHERE id = %s", (post_id,))
     row = cursor.fetchone()
 
     if row is None:
@@ -359,11 +406,21 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
     if row["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to edit this post")
 
+    if post.category_id:
+        cursor.execute("SELECT id FROM categories WHERE id = %s", (post.category_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Category not found")
+
     cursor.execute(
-        "UPDATE posts SET title = %s, content = %s WHERE id = %s",
-        (post.title, post.content, post_id)
+        "UPDATE posts SET title = %s, content = %s, category_id = %s WHERE id = %s",
+        (post.title, post.content, post.category_id, post_id)
     )
     conn.commit()
+
+    clear_post_cache(post_id)
+    redis_client.delete(f"posts:list:cat:{row['category_id']}")
+    redis_client.delete(f"posts:list:cat:{post.category_id}")
+
     return {"message": "updated", "id": post_id}
 
 # 删除文章
@@ -525,6 +582,12 @@ def get_attachment_file(attachment_id: int, db=Depends(get_db_conn)):
         filename=row["original_name"],
         media_type=row["content_type"]
     )
+
+@app.get("/categories")
+def get_categories(db = Depends(get_db_conn)):
+    conn, cursor = db
+    cursor.execute("SELECT id, name FROM categories ORDER BY id ")
+    return cursor.fetchall()
 
 @app.post("/files/", deprecated=True)
 async def creat_file(file: Annotated[bytes | None, File()] = None):
