@@ -2,9 +2,7 @@ import os
 import uuid
 import shutil
 from asyncio import wait
-
 import bcrypt
-
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -21,7 +19,6 @@ from mysql.connector import pooling, cursor
 from contextlib import contextmanager
 import redis
 import json
-
 from pydantic_core.core_schema import field_after_validator_function
 
 #创建FastAPI应用
@@ -520,6 +517,7 @@ def get_post_attchments(post_id: int, db=Depends(get_db_conn)):
         row["url"] = f"/uploads/{row['stored_name']}"
 
     redis_client.setex(cache_key, 300, json.dumps(rows, default=str))
+
     return rows
 
 @app.delete("/attachments/{attachment_id}")
@@ -587,12 +585,14 @@ def get_attachment_file(attachment_id: int, db=Depends(get_db_conn)):
 def get_categories(db = Depends(get_db_conn)):
     conn, cursor = db
     cursor.execute("SELECT id, name FROM categories ORDER BY id ")
+
     return cursor.fetchall()
 
 @app.post("/files/", deprecated=True)
 async def creat_file(file: Annotated[bytes | None, File()] = None):
     if not file:
         return {"message": "No file set"}
+
     return {"file_size": len(file)}
 
 
@@ -600,4 +600,5 @@ async def creat_file(file: Annotated[bytes | None, File()] = None):
 async def creat_upload_file(file: UploadFile | None = None):
     if not file:
         return {"message": "No file set"}
+
     return {"filename": file.filename}
