@@ -40,32 +40,33 @@ redis_client = redis.Redis(
     decode_responses = True
 )
 
+ #创建上传目录
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-#引入静态文件
+# 引入静态文件
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-MAX_FILE_SIZE = 5 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"} # 允许上传文件格式
+MAX_FILE_SIZE = 5 * 1024 * 1024 # 最大文件大小 5MB
 
-#数据库配置
+# 数据库配置
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "bloguser")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "060427")
 DB_NAME = os.getenv("DB_NAME", "blog_db")
 
-#JWT认证配置
+# JWT认证配置
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-only")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("TOKEN_EXPIRE", "30"))
 
-#OAuth2 密码模式
+# OAuth2 密码模式
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
-#MySQL数据库连接池
+# MySQL数据库连接池
 db_pool = pooling.MySQLConnectionPool(
     pool_name="blog_pool",
     pool_size=5,
@@ -79,7 +80,7 @@ db_pool = pooling.MySQLConnectionPool(
     collation='utf8mb4_unicode_ci'
 )
 
-
+# 创建数据库函数
 def create_database_if_not_exists():
     conn = mysql.connector.connect(
         host=DB_HOST,
@@ -94,7 +95,7 @@ def create_database_if_not_exists():
     cursor.close()
     conn.close()
 
-
+# contextmanager装饰器用于创建数据库连接上下文管理器
 @contextmanager
 def get_db():
     conn = db_pool.get_connection()
@@ -108,7 +109,7 @@ def get_db():
 
 def init_db():
     create_database_if_not_exists()
-    with get_db() as (conn, cursor):
+    with get_db() as (conn, cursor): # 进入with块，获取数据库连接和游标
         #创建用户表
         cursor.execute("""
                        CREATE TABLE IF NOT EXISTS users
@@ -179,6 +180,7 @@ def init_db():
 #应用启动时自动初始化数据库
 init_db()
 
+#
 def get_db_conn():
     conn = db_pool.get_connection()
     cursor = conn.cursor(dictionary=True, buffered=True)
