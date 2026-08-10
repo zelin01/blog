@@ -129,7 +129,8 @@ def init_db():
                            user_id INT NOT NULL,
                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) 
+                           ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                        """)
         cursor.execute(""" 
                         CREATE TABLE IF NOT EXISTS attachments (
@@ -235,6 +236,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db=Depends(get_db_conn
         raise credentials_exception
     return row
 
+# 图片检查函数
 def validate_image(file: UploadFile) -> None:
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail="Invalid image type")
@@ -244,10 +246,12 @@ def validate_image(file: UploadFile) -> None:
     file.file.seek(0)
     return content
 
+# 创建图片唯一名称
 def generate_unique_filename(original_name: str) -> None:
     ext = Path(original_name).suffix
     return f"{uuid.uuid4().hex}{ext}"
 
+# 清理redis缓存
 def clear_post_cache(post_id: int):
     redis_client.delete("posts/{post_id}")
     redis_client.delete("posts:list")
@@ -332,6 +336,7 @@ def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_cu
     redis_client.delete("posts:list")
     return {"message": "created", "id": post_id}
 
+# 拉取文章列表，支持按分类过滤
 @app.get("/posts")
 def get_posts(category_id: optional[int] = None,db=Depends(get_db_conn)):
     cache_key = f"posts:list:cat:{category_id}" if category_id else "posts:list"
@@ -453,6 +458,7 @@ def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_
     clear_post_cache(post_id)
     return {"message": "deleted", "id": post_id}
 
+# 上传图片
 @app.post("/post/{post_id}/upload")
 async def upload_image(
         post_id: int,
@@ -475,8 +481,12 @@ async def upload_image(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    cursor.execute("""INSERT INTO attachments (post_id, user_id, original_name,stored_name, file_path, file_size, content_type)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)""",(
+    cursor.execute("""
+                   INSERT INTO attachments (
+                    post_id, user_id, original_name,stored_name, file_path, file_size, content_type)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s
+                    )""",
+                   (
                     post_id,
                     current_user["id"],
                     file.filename,
@@ -498,6 +508,7 @@ async def upload_image(
         "size": file_path.stat().st_size
     }
 
+# 获取文章的所有附件
 @app.get("/post/{post_id}/attachments")
 def get_post_attchments(post_id: int, db=Depends(get_db_conn)):
     cache_key = f"attachments:post:{post_id}"
@@ -522,6 +533,7 @@ def get_post_attchments(post_id: int, db=Depends(get_db_conn)):
 
     return rows
 
+# 删除上传图片
 @app.delete("/attachments/{attachment_id}")
 def delete_attachment(
     attachment_id: int,
@@ -568,6 +580,7 @@ def delete_attachment(
 
     return {"message": "Attachment deleted", "id": attachment_id}
 
+# 获取图片
 @app.get("/attachments/{attachment_id}")
 def get_attachment_file(attachment_id: int, db=Depends(get_db_conn)):
     """通过 attachment_id 直接访问原图"""
@@ -583,6 +596,7 @@ def get_attachment_file(attachment_id: int, db=Depends(get_db_conn)):
         media_type=row["content_type"]
     )
 
+# 获取文章分类标签
 @app.get("/categories")
 def get_categories(db = Depends(get_db_conn)):
     conn, cursor = db
