@@ -320,7 +320,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get_db_co
 def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_current_user)):
     conn, cursor = db
 
-    if post.category_id:
+    if post.category_id is not None:
         cursor.execute("SELECT id FROM categories WHERE id = %s", (post.category_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=400, detail="Category does not exist")
@@ -410,7 +410,7 @@ def update_post(post_id: int, post: Post, db=Depends(get_db_conn), current_user=
     if row["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to edit this post")
 
-    if post.category_id:
+    if post.category_id is not None:
         cursor.execute("SELECT id FROM categories WHERE id = %s", (post.category_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=400, detail="Category not found")
