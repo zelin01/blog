@@ -1,87 +1,124 @@
-from datetime import datetime
-from typing import List, Dict, Optional
-from .models import BlogPost
+import mysql.connector
+from mysql.connector import pooling
+from contextlib import contextmanager
+from config import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 
+# MySQL数据库连接池
+db_pool = pooling.MySQLConnectionPool(
+    pool_name="blog_pool",
+    pool_size=5,
+    pool_reset_session=True,
+    host=DB_HOST,
+    port=DB_PORT,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    database=DB_NAME,
+    charset='utf8mb4',
+    collation='utf8mb4_unicode_ci'
+)
 
-class BlogDatabase:
-    def __init__(self):
-        self.posts = []
-        self.post_id_counter = 1
-        self.init_sample_data()
+# contextmanager装饰器用于创建数据库连接上下文管理器
+@contextmanager
+def get_db():
+    conn = db_pool.get_connection()
+    cursor = conn.cursor(dictionary=True, buffered=True)
+    try:
+        yield conn, cursor
+    finally:
+        cursor.close()
+        conn.close()
 
-    def init_sample_data(self):
-        """初始化示例数据"""
-        if not self.posts:
-            sample_posts = [
-                BlogPost(
-                    id=1,
-                    title="欢迎来到我的博客",
-                    content="这是我的第一篇博客文章，欢迎阅读！",
-                    author="管理员",
-                    created_at="2024-01-01 10:00:00",
-                    updated_at="2024-01-01 10:00:00"
-                ),
-                BlogPost(
-                    id=2,
-                    title="NiceGUI 3.X 新特性介绍",
-                    content="NiceGUI 3.X 带来了很多令人兴奋的新特性...",
-                    author="技术达人",
-                    created_at="2024-01-02 14:30:00",
-                    updated_at="2024-01-02 14:30:00"
-                ),
-                BlogPost(
-                    id=3,
-                    title="Python Web开发趋势",
-                    content="近年来，Python在Web开发领域发展迅速...",
-                    author="Python爱好者",
-                    created_at="2024-01-03 09:15:00",
-                    updated_at="2024-01-03 09:15:00"
-                )
-            ]
+def get_db_conn():
+    conn = db_pool.get_connection()
+    cursor = conn.cursor(dictionary=True, buffered=True)
+    try:
+        yield conn, cursor
+    finally:
+        cursor.close()
+        conn.close()
 
-            for post in sample_posts:
-                self.posts.append(post.dict())
-            self.post_id_counter = 4
+# 创建数据库函数
+def create_database_if_not_exists():
+    conn = mysql.connector.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD
+    )
+    cursor = conn.cursor()
+    #创建数据库，设置字符集
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-    def get_all_posts(self) -> List[Dict]:
-        """获取所有文章"""
-        return self.posts
-
-    def get_post(self, post_id: int) -> Optional[Dict]:
-        """根据ID获取文章"""
-        for post in self.posts:
-            if post["id"] == post_id:
-                return post
-        return None
-
-    def create_post(self, post_data: Dict) -> Dict:
-        """创建新文章"""
-        post = BlogPost(**post_data)
-        post.id = self.post_id_counter
-        post.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        post.updated_at = post.created_at
-
-        post_dict = post.dict()
-        self.posts.append(post_dict)
-        self.post_id_counter += 1
-        return post_dict
-
-    def update_post(self, post_id: int, post_data: Dict) -> Optional[Dict]:
-        """更新文章"""
-        for i, existing_post in enumerate(self.posts):
-            if existing_post["id"] == post_id:
-                post_data["id"] = post_id
-                post_data["created_at"] = existing_post["created_at"]
-                post_data["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                self.posts[i] = post_data
-                return post_data
-        return None
-
-    def delete_post(self, post_id: int) -> bool:
-        """删除文章"""
-        for i, post in enumerate(self.posts):
-            if post["id"] == post_id:
-                self.posts.pop(i)
-                return True
-        return False
+def init_db():
+    create_database_if_not_exists()
+    with get_db() as (conn, cursor): # 进入with块，获取数据库连接和游标
+        #创建用户表
+        cursor.execute("""
+                       CREATE TABLE IF NOT EXISTS users
+                       (
+                           id INT AUTO_INCREMENT PRIMARY KEY,
+                           username VARCHAR (255) UNIQUE NOT NULL,
+                           hashed_password VARCHAR(255) NOT NULL,
+                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                       """)
+        #创建文章表
+        cursor.execute("""
+                       CREATE TABLE IF NOT EXISTS posts
+                       (
+                           id INT AUTO_INCREMENT PRIMARY KEY,
+                           title VARCHAR (255) NOT NULL,
+                           content TEXT NOT NULL,
+                           user_id INT NOT NULL,
+                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) 
+                           ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                       """)
+        cursor.execute(""" 
+                        CREATE TABLE IF NOT EXISTS attachments (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        post_id INT NOT NULL,
+                        user_id INT NOT NULL,
+                        original_name VARCHAR (255) NOT NULL,
+                        stored_name VARCHAR (255) NOT NULL UNIQUE,
+                        file_path VARCHAR (500) NOT NULL,
+                        file_size INT NOT NULL,
+                        content_type VARCHAR (100) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                        INDEX idx_post_id (post_id))
+                        ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                        """)
+        cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS categories (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR (50) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uk_name (name))
+                    ENGINE = innoDB DEFAULT CHARSET=utf8mb4
+        """)
+        cursor.execute("""
+                       SELECT COUNT(*) as cnt
+                       FROM information_schema.COLUMNS
+                       WHERE TABLE_SCHEMA = %s
+                       AND TABLE_NAME = 'posts'
+                       AND COLUMN_NAME = 'category_id'
+                       """, (DB_NAME,))
+        if cursor.fetchone()["cnt"] == 0:
+            cursor.execute("""
+                           ALTER TABLE posts
+                           ADD COLUMN category_id INT DEFAULT NULL,
+                           ADD CONSTRAINT fk_post_category
+                           FOREIGN KEY (category_id) REFERENCES categories(id)
+                           ON DELETE SET NULL
+                           """)
+        cursor.execute("""
+                       INSERT IGNORE INTO categories (name)
+                       VALUES ('技术'), ('生活'), ('随笔')
+                       """)
+        conn.commit()
+    print("数据库初始化完成")
