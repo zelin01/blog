@@ -1,14 +1,15 @@
 import uuid
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
-from config import ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE, UPLOAD_DIR, redis_client
+from config import ALLOWED_IMAGE_TYPES,MAX_FILE_SIZE, redis_client
+
 
 # 图片检查函数
 def validate_image(file: UploadFile) -> None:
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail="Invalid image type")
     content = file.file.read()
-    if len(content) > MAX_FILR_SIZE:
+    if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too big")
     file.file.seek(0)
     return content
