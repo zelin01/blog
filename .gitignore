@@ -1,0 +1,7 @@
+venv
+frontend
+identifier.sqlite
+os.path.join(os.path.dirname(Fs)
+blog.db
+docker-compose.yml
+main.py.bak
