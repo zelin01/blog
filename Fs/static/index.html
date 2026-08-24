@@ -6,391 +6,513 @@
     <title>博客系统</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f5f7fa;
+            --card: #ffffff;
+            --text: #1a1a2e;
+            --text-secondary: #666;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --danger: #ef4444;
+            --border: #e5e7eb;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f6fa;
-            color: #2d3436;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             line-height: 1.6;
         }
-        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
 
+        /* 导航栏 */
         .navbar {
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            padding: 15px 0;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: var(--shadow);
         }
-        .navbar-inner {
-            max-width: 900px;
+
+        .nav-container {
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .logo {
-            font-size: 22px;
-            font-weight: 700;
-            color: #6c5ce7;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
             cursor: pointer;
         }
-        .nav-user {
+
+        .nav-links {
             display: flex;
+            gap: 1.5rem;
             align-items: center;
-            gap: 15px;
-            font-size: 14px;
-            color: #636e72;
         }
-        .btn {
-            padding: 8px 18px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
+
+        .nav-links a, .nav-links button {
             text-decoration: none;
-            display: inline-block;
-        }
-        .btn-primary {
-            background: #6c5ce7;
-            color: white;
-        }
-        .btn-primary:hover { background: #5b4cdb; }
-        .btn-primary:disabled {
-            background: #a29bfe;
-            cursor: not-allowed;
-        }
-        .btn-danger {
-            background: #ff7675;
-            color: white;
-        }
-        .btn-danger:hover { background: #e84393; }
-        .btn-secondary {
-            background: #dfe6e9;
-            color: #2d3436;
-        }
-        .btn-secondary:hover { background: #b2bec3; }
-        .btn-sm { padding: 5px 12px; font-size: 13px; }
-
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-            margin-bottom: 20px;
-        }
-        .card-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2d3436;
-        }
-        .card-meta {
-            font-size: 13px;
-            color: #b2bec3;
-            margin-bottom: 12px;
-        }
-        .card-content {
-            color: #636e72;
-            line-height: 1.8;
-            white-space: pre-wrap;
-        }
-
-        .form-group { margin-bottom: 18px; }
-        .form-label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #2d3436;
-        }
-        .form-input, .form-textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #dfe6e9;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: border 0.2s;
-            font-family: inherit;
-        }
-        .form-input:focus, .form-textarea:focus {
-            outline: none;
-            border-color: #6c5ce7;
-        }
-        .form-textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-        .error-msg {
-            color: #e84393;
-            font-size: 13px;
-            margin-top: 6px;
-        }
-        .success-msg {
-            color: #00b894;
-            font-size: 13px;
-            margin-top: 6px;
-        }
-
-        .post-item {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .post-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-        .post-item-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #2d3436;
-        }
-        .post-item-meta {
-            font-size: 13px;
-            color: #b2bec3;
-        }
-        .post-item-preview {
-            margin-top: 10px;
-            color: #636e72;
-            font-size: 14px;
-            line-height: 1.6;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .image-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .image-item {
-            position: relative;
-            border-radius: 8px;
-            overflow: hidden;
-            aspect-ratio: 1;
-            background: #f5f6fa;
-        }
-        .image-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            cursor: zoom-in;
-        }
-        .image-delete {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            background: rgba(0,0,0,0.6);
-            color: white;
+            color: var(--text-secondary);
+            background: none;
             border: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
+            font-size: 1rem;
             cursor: pointer;
-            font-size: 16px;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .upload-area {
-            border: 2px dashed #dfe6e9;
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             transition: all 0.2s;
-            margin-top: 16px;
-            position: relative;
-        }
-        .upload-area:hover {
-            border-color: #6c5ce7;
-            background: #f8f9ff;
-        }
-        .upload-area input { display: none; }
-        .upload-hint {
-            color: #b2bec3;
-            font-size: 14px;
-        }
-        .upload-loading {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            color: #6c5ce7;
-            font-weight: 500;
         }
 
-        .page { display: none; animation: fadeIn 0.3s; }
-        .page.active { display: block; }
+        .nav-links a:hover, .nav-links button:hover {
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .btn-primary {
+            background: var(--primary) !important;
+            color: white !important;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover) !important;
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* 页面切换 */
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.3s; }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #b2bec3;
-        }
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 12px;
+        /* 卡片 */
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
         }
 
-        .tabs {
-            display: flex;
-            gap: 0;
-            margin-bottom: 24px;
-            border-bottom: 2px solid #dfe6e9;
+        /* 表单 */
+        .form-group {
+            margin-bottom: 1.5rem;
         }
-        .tab {
-            padding: 10px 24px;
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 200px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            color: #636e72;
+            transition: all 0.2s;
             font-weight: 500;
         }
-        .tab.active {
-            color: #6c5ce7;
-            border-bottom-color: #6c5ce7;
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--border); color: var(--text); }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
 
-        .action-bar {
+        /* 文章列表 */
+        .post-header {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
             align-items: center;
         }
 
-        @media (max-width: 600px) {
-            .container { padding: 12px; }
-            .card { padding: 16px; }
-            .image-grid { grid-template-columns: repeat(3, 1fr); }
+        .post-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 8px;
         }
+
+        .post-item:hover {
+            background: rgba(79, 70, 229, 0.02);
+        }
+
+        .post-item:last-child { border-bottom: none; }
+
+        .post-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .post-meta {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .category-tag {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            padding: 1rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background: var(--card);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            padding: 0 1rem;
+        }
+
+        .pagination .current-page {
+            background: var(--primary) !important;
+            color: white;
+            border-color: var(--primary) !important;
+        }
+
+        /* 文章详情 */
+        .post-detail h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-detail .meta {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .post-content {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        /* 附件 */
+        .attachment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .attachment-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--card);
+        }
+
+        .attachment-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .attachment-info {
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .attachment-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.02);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        /* 提示消息 */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+            box-shadow: var(--shadow);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: var(--danger); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .container { padding: 0 1rem; }
+            .nav-links span { display: none; }
+            .post-header { flex-direction: column; align-items: flex-start; }
+            .filter-bar { width: 100%; }
+            .filter-bar select { flex: 1; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-<div class="navbar">
-    <div class="navbar-inner">
-        <div class="logo" onclick="showPage('list')">📚 我的博客</div>
-        <div class="nav-user" id="navUser">
-            <span>加载中...</span>
+<!-- 导航栏 -->
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo" onclick="router('home')">📚 我的博客</div>
+        <div class="nav-links">
+            <a href="#" onclick="router('home')">首页</a>
+            <a href="#" onclick="router('new-post')" id="nav-new-post" style="display:none">写文章</a>
+            <button onclick="router('login')" id="nav-login">登录</button>
+            <button onclick="logout()" id="nav-logout" style="display:none">退出</button>
         </div>
     </div>
-</div>
+</nav>
 
 <div class="container">
 
-    <!-- 登录/注册 -->
-    <div class="page active" id="page-auth">
-        <div class="card" style="max-width: 420px; margin: 40px auto;">
-            <div class="tabs">
-                <div class="tab active" onclick="switchAuthTab('login')">登录</div>
-                <div class="tab" onclick="switchAuthTab('register')">注册</div>
-            </div>
-
-            <div id="auth-login">
+    <!-- 登录/注册页 -->
+    <div id="page-auth" class="page">
+        <div class="card" style="max-width: 400px; margin: 4rem auto;">
+            <h2 id="auth-title">登录</h2>
+            <form id="auth-form" onsubmit="handleAuth(event)">
                 <div class="form-group">
-                    <label class="form-label">用户名</label>
-                    <input type="text" class="form-input" id="loginUsername" placeholder="请输入用户名">
+                    <label>用户名</label>
+                    <input type="text" id="auth-username" required placeholder="请输入用户名">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">密码</label>
-                    <input type="password" class="form-input" id="loginPassword" placeholder="请输入密码">
+                    <label>密码</label>
+                    <input type="password" id="auth-password" required placeholder="请输入密码">
                 </div>
-                <div class="error-msg" id="loginError"></div>
-                <button class="btn btn-primary" style="width:100%" onclick="handleLogin()">登 录</button>
-            </div>
-
-            <div id="auth-register" style="display:none">
-                <div class="form-group">
-                    <label class="form-label">用户名</label>
-                    <input type="text" class="form-input" id="regUsername" placeholder="设置用户名">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">密码</label>
-                    <input type="password" class="form-input" id="regPassword" placeholder="设置密码">
-                </div>
-                <div class="error-msg" id="regError"></div>
-                <button class="btn btn-primary" style="width:100%" onclick="handleRegister()">注 册</button>
-            </div>
+                <button type="submit" class="btn btn-primary" style="width:100%" id="auth-btn">登录</button>
+            </form>
+            <p style="text-align:center; margin-top:1rem; color:var(--text-secondary)">
+                <span id="auth-toggle-text">还没有账号？</span>
+                <a href="#" onclick="toggleAuthMode()" id="auth-toggle-link">去注册</a>
+            </p>
         </div>
     </div>
 
-    <!-- 文章列表 -->
-    <div class="page" id="page-list">
-        <div class="action-bar">
-            <h2 style="font-size:20px">文章列表</h2>
-            <button class="btn btn-primary" onclick="showCreatePost()">✚ 写文章</button>
+    <!-- 文章列表页 -->
+    <div id="page-home" class="page active">
+        <div class="post-header">
+            <h1>文章列表</h1>
+            <div class="filter-bar">
+                <select id="category-filter" onchange="loadPosts(1)">
+                    <option value="">全部分类</option>
+                </select>
+                <button class="btn btn-primary" onclick="router('new-post')" id="btn-new-post" style="display:none">+ 写文章</button>
+            </div>
         </div>
-        <div id="postList"></div>
+        <div id="posts-container">
+            <div class="loading"><div class="spinner"></div> 加载中...</div>
+        </div>
+        <div class="pagination" id="pagination" style="display:none"></div>
     </div>
 
-    <!-- 文章详情 -->
-    <div class="page" id="page-detail">
+    <!-- 文章详情页 -->
+    <div id="page-detail" class="page">
+        <div class="card post-detail">
+            <div id="post-content-area">
+                <div class="loading"><div class="spinner"></div> 加载中...</div>
+            </div>
+        </div>
+
+        <!-- 附件区域 -->
+        <div class="card" id="attachments-section" style="display:none">
+            <h3>📎 附件</h3>
+            <div id="attachments-list" class="attachment-grid"></div>
+            <div class="pagination" id="attach-pagination" style="display:none"></div>
+        </div>
+    </div>
+
+    <!-- 创建/编辑文章页 -->
+    <div id="page-editor" class="page">
         <div class="card">
-            <button class="btn btn-secondary btn-sm" onclick="showPage('list')" style="margin-bottom:16px">← 返回列表</button>
-            <div class="card-title" id="detailTitle"></div>
-            <div class="card-meta" id="detailMeta"></div>
-            <div class="card-content" id="detailContent"></div>
-
-            <div style="margin-top:24px">
-                <h3 style="font-size:16px;margin-bottom:12px;color:#636e72">📎 附件图片</h3>
-                <div class="image-grid" id="detailImages"></div>
-
-                <div class="upload-area" id="detailUploadArea" style="display:none">
-                    <input type="file" id="detailFileInput" accept="image/*" onchange="handleUploadImage(event)">
-                    <div class="upload-hint" onclick="document.getElementById('detailFileInput').click()">
-                        📤 点击上传图片<br>
-                        <small style="color:#b2bec3">支持 jpg/png/gif/webp，最大5MB</small>
-                    </div>
-                    <div class="upload-loading" id="uploadLoading" style="display:none">
-                        上传中...
-                    </div>
+            <h2 id="editor-title">写文章</h2>
+            <form id="post-form" onsubmit="savePost(event)">
+                <input type="hidden" id="post-id">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" id="post-title" required placeholder="请输入文章标题">
                 </div>
-                <div class="error-msg" id="uploadError"></div>
-                <div class="success-msg" id="uploadSuccess"></div>
-            </div>
-
-            <div style="margin-top:24px;display:flex;gap:10px" id="detailActions"></div>
+                <div class="form-group">
+                    <label>分类</label>
+                    <select id="post-category">
+                        <option value="">选择分类</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea id="post-content" required placeholder="支持 Markdown 格式..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">保存文章</button>
+                    <button type="button" class="btn btn-secondary" onclick="router('home')">取消</button>
+                </div>
+            </form>
         </div>
-    </div>
 
-    <!-- 编辑文章 -->
-    <div class="page" id="page-edit">
-        <div class="card">
-            <h2 class="card-title" id="editTitle">写文章</h2>
-            <div class="form-group" style="margin-top:20px">
-                <label class="form-label">标题</label>
-                <input type="text" class="form-input" id="editPostTitle" placeholder="文章标题">
+        <!-- 图片上传（仅编辑模式显示） -->
+        <div class="card" id="upload-section" style="display:none">
+            <h3>📤 上传图片</h3>
+            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                <p>点击或拖拽图片到此处上传</p>
+                <p style="font-size:0.875rem; color:var(--text-secondary); margin-top:0.5rem">支持 JPG、PNG、GIF、WebP，最大 5MB</p>
             </div>
-            <div class="form-group">
-                <label class="form-label">内容</label>
-                <textarea class="form-textarea" id="editPostContent" placeholder="文章内容..."></textarea>
-            </div>
-            <div class="error-msg" id="editError"></div>
-            <div style="display:flex;gap:10px">
-                <button class="btn btn-primary" onclick="handleSavePost()">保 存</button>
-                <button class="btn btn-secondary" onclick="showPage('list')">取 消</button>
-            </div>
+            <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+
+            <h4 style="margin-top:1.5rem">已上传图片</h4>
+            <div id="editor-attachments" class="attachment-grid"></div>
         </div>
     </div>
 
@@ -398,395 +520,434 @@
 
 <script>
 // ==================== 配置 ====================
-const API_BASE = 'http://localhost:8000';
-
-// ==================== 状态（关键修复：从 localStorage 恢复 currentUser）====================
-let currentToken = localStorage.getItem('blog_token') || null;
-let currentUser = JSON.parse(localStorage.getItem('blog_user') || 'null');
-let postsCache = [];
+const API_BASE = 'http://localhost:8000';  // 修改为你的后端地址
+let currentToken = localStorage.getItem('token') || null;
+let currentUser = null;
+let authMode = 'login'; // 'login' 或 'register'
+let postsCache = { data: [], total: 0 };
 let currentPostId = null;
-let editingPostId = null;
 
-// ==================== API 封装 ====================
-async function apiGet(path) {
-    const headers = {};
-    if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
-    const res = await fetch(API_BASE + path, { headers });
-    if (res.status === 401) { logout(); throw new Error('登录已过期，请重新登录'); }
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `请求失败: ${res.status}`);
-    }
-    return res.json();
+// ==================== 工具函数 ====================
+function $(id) { return document.getElementById(id); }
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-async function apiPost(path, data, isJson = true) {
+async function api(url, options = {}) {
     const opts = {
-        method: 'POST',
-        headers: {}
+        headers: {
+            'Accept': 'application/json',
+            ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+            ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {})
+        },
+        ...options
     };
 
-    if (currentToken) {
-        opts.headers['Authorization'] = `Bearer ${currentToken}`;
-    }
+    try {
+        const res = await fetch(API_BASE + url, opts);
+        const data = res.headers.get('content-type')?.includes('json') ? await res.json() : null;
 
-    if (isJson) {
-        opts.headers['Content-Type'] = 'application/json';
-        opts.body = JSON.stringify(data);
-    } else {
-        opts.body = data;
+        if (!res.ok) {
+            throw new Error(data?.detail || `请求失败: ${res.status}`);
+        }
+        return data;
+    } catch (err) {
+        showToast(err.message, 'error');
+        throw err;
     }
-
-    const res = await fetch(API_BASE + path, opts);
-
-    if (res.status === 401) {
-        logout();
-        throw new Error('登录已过期，请重新登录');
-    }
-    if (!res.ok) {
-        const text = await res.text();
-        let err;
-        try { err = JSON.parse(text); } catch { err = {}; }
-        throw new Error(err.detail || `请求失败: ${res.status} ${res.statusText}`);
-    }
-    return res.json();
 }
 
-async function apiPut(path, data) {
-    const res = await fetch(API_BASE + path, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${currentToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-    if (res.status === 401) { logout(); throw new Error('登录已过期'); }
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `请求失败: ${res.status}`);
-    }
-    return res.json();
-}
-
-async function apiDelete(path) {
-    const res = await fetch(API_BASE + path, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${currentToken}` }
-    });
-    if (res.status === 401) { logout(); throw new Error('登录已过期'); }
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `请求失败: ${res.status}`);
-    }
-    return res.status === 204 ? null : res.json();
-}
-
-// ==================== 页面切换 ====================
-function showPage(page) {
+// ==================== 路由 ====================
+function router(page, param = null) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + page).classList.add('active');
 
-    if (page === 'list') loadPosts();
-    if (page === 'detail') loadPostDetail(currentPostId);
+    switch(page) {
+        case 'home':
+            $('page-home').classList.add('active');
+            loadPosts(1);
+            loadCategories();
+            break;
+        case 'login':
+            $('page-auth').classList.add('active');
+            break;
+        case 'detail':
+            $('page-detail').classList.add('active');
+            loadPostDetail(param);
+            break;
+        case 'new-post':
+            if (!currentToken) { router('login'); return; }
+            $('page-editor').classList.add('active');
+            $('editor-title').textContent = '写文章';
+            $('post-form').reset();
+            $('post-id').value = '';
+            $('upload-section').style.display = 'none';
+            loadCategoriesForSelect();
+            break;
+        case 'edit-post':
+            if (!currentToken) { router('login'); return; }
+            $('page-editor').classList.add('active');
+            $('editor-title').textContent = '编辑文章';
+            loadPostForEdit(param);
+            break;
+    }
+
+    updateNav();
 }
 
-function switchAuthTab(tab) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById('auth-login').style.display = tab === 'login' ? 'block' : 'none';
-    document.getElementById('auth-register').style.display = tab === 'login' ? 'none' : 'block';
-    document.getElementById('loginError').textContent = '';
-    document.getElementById('regError').textContent = '';
+function updateNav() {
+    const isLogin = !!currentToken;
+    $('nav-login').style.display = isLogin ? 'none' : 'inline-block';
+    $('nav-logout').style.display = isLogin ? 'inline-block' : 'none';
+    $('nav-new-post').style.display = isLogin ? 'inline-block' : 'none';
+    $('btn-new-post').style.display = isLogin ? 'inline-block' : 'none';
 }
 
 // ==================== 认证 ====================
-async function checkAuth() {
-    if (!currentToken) {
-        renderNav();
-        showPage('auth');
-        return;
-    }
-    try {
-        await loadPosts();
-        renderNav();        // 关键修复：加载成功后刷新导航栏
-        showPage('list');
-    } catch (e) {
-        logout();
-    }
+function toggleAuthMode() {
+    authMode = authMode === 'login' ? 'register' : 'login';
+    $('auth-title').textContent = authMode === 'login' ? '登录' : '注册';
+    $('auth-btn').textContent = authMode === 'login' ? '登录' : '注册';
+    $('auth-toggle-text').textContent = authMode === 'login' ? '还没有账号？' : '已有账号？';
+    $('auth-toggle-link').textContent = authMode === 'login' ? '去注册' : '去登录';
 }
 
-function renderNav() {
-    const el = document.getElementById('navUser');
-    if (currentToken && currentUser) {
-        el.innerHTML = `
-            <span>👤 ${currentUser.username}</span>
-            <button class="btn btn-danger btn-sm" onclick="logout()">退出</button>
-        `;
-    } else {
-        el.innerHTML = `<span>未登录</span>`;
-    }
-}
-
-async function handleLogin() {
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorEl = document.getElementById('loginError');
-
-    if (!username || !password) {
-        errorEl.textContent = '请填写完整信息';
-        return;
-    }
+async function handleAuth(e) {
+    e.preventDefault();
+    const username = $('auth-username').value;
+    const password = $('auth-password').value;
 
     try {
-        const formData = new URLSearchParams();
-        formData.append('username', username);
-        formData.append('password', password);
+        if (authMode === 'register') {
+            await api('/register', {
+                method: 'POST',
+                body: JSON.stringify({ username, password })
+            });
+            showToast('注册成功，请登录');
+            toggleAuthMode();
+        } else {
+            // 登录使用 form-data（OAuth2PasswordRequestForm）
+            const formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('password', password);
 
-        const res = await fetch(API_BASE + '/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData
-        });
+            const data = await api('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData
+            });
 
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || '登录失败');
+            currentToken = data.access_token;
+            localStorage.setItem('token', currentToken);
+            showToast('登录成功');
+            router('home');
         }
-
-        const data = await res.json();
-        currentToken = data.access_token;
-        localStorage.setItem('blog_token', currentToken);
-
-        // 关键修复：保存用户信息到 localStorage
-        currentUser = { username };
-        localStorage.setItem('blog_user', JSON.stringify(currentUser));
-
-        renderNav();
-        await loadPosts();
-        showPage('list');
-
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-        errorEl.textContent = '';
-    } catch (e) {
-        errorEl.textContent = e.message;
-    }
-}
-
-async function handleRegister() {
-    const username = document.getElementById('regUsername').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const errorEl = document.getElementById('regError');
-
-    if (!username || !password) {
-        errorEl.textContent = '请填写完整信息';
-        return;
-    }
-
-    try {
-        await apiPost('/register', { username, password });
-        errorEl.textContent = '注册成功，请登录';
-        errorEl.style.color = '#00b894';
-        setTimeout(() => switchAuthTab('login'), 800);
-    } catch (e) {
-        errorEl.textContent = e.message;
-        errorEl.style.color = '#e84393';
+    } catch (err) {
+        // 错误已在 api() 中提示
     }
 }
 
 function logout() {
     currentToken = null;
-    currentUser = null;
-    localStorage.removeItem('blog_token');
-    localStorage.removeItem('blog_user');  // 关键修复：清除用户信息
-    renderNav();
-    showPage('auth');
+    localStorage.removeItem('token');
+    showToast('已退出登录');
+    router('home');
 }
 
-// ==================== 文章 ====================
-async function loadPosts() {
+// ==================== 分类 ====================
+async function loadCategories() {
     try {
-        postsCache = await apiGet('/posts');
-        renderPostList();
+        const cats = await api('/categories');
+        const select = $('category-filter');
+        select.innerHTML = '<option value="">全部分类</option>';
+        cats.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+    } catch (e) {}
+}
+
+async function loadCategoriesForSelect() {
+    try {
+        const cats = await api('/categories');
+        const select = $('post-category');
+        select.innerHTML = '<option value="">选择分类</option>';
+        cats.forEach(c => {
+            select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        });
+    } catch (e) {}
+}
+
+// ==================== 文章列表 ====================
+async function loadPosts(page = 1) {
+    const limit = 10;
+    const skip = (page - 1) * limit;
+    const categoryId = $('category-filter').value;
+
+    let url = `/posts?skip=${skip}&limit=${limit}`;
+    if (categoryId) url += `&category_id=${categoryId}`;
+
+    try {
+        const data = await api(url);
+        postsCache = data;
+        renderPosts(data.data);
+        renderPagination(data.total, limit, page, 'pagination', loadPosts);
     } catch (e) {
-        document.getElementById('postList').innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <div>加载失败: ${e.message}</div>
-            </div>
-        `;
+        $('posts-container').innerHTML = '<div class="empty-state">加载失败</div>';
     }
 }
 
-function renderPostList() {
-    const container = document.getElementById('postList');
-    if (!postsCache || postsCache.length === 0) {
+function renderPosts(posts) {
+    const container = $('posts-container');
+    if (!posts || posts.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">📝</div>
-                <div>还没有文章，来写第一篇吧！</div>
-            </div>
-        `;
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <p>暂无文章</p>
+            </div>`;
         return;
     }
 
-    container.innerHTML = postsCache.map(post => `
-        <div class="post-item" onclick="openPost(${post.id})">
-            <div class="post-item-title">${escapeHtml(post.title)}</div>
-            <div class="post-item-meta">👤 ${escapeHtml(post.author || '未知')} · 🕐 ${formatDate(post.created_at)}</div>
-            <div class="post-item-preview">${escapeHtml(post.content)}</div>
+    container.innerHTML = posts.map(post => `
+        <div class="post-item" onclick="router('detail', ${post.id})">
+            <div class="post-title">${escapeHtml(post.title)}</div>
+            <div class="post-meta">
+                <span>👤 ${escapeHtml(post.author)}</span>
+                <span>📅 ${formatDate(post.created_at)}</span>
+                ${post.category_name ? `<span class="category-tag">${escapeHtml(post.category_name)}</span>` : ''}
+            </div>
         </div>
     `).join('');
 }
 
-async function openPost(id) {
-    currentPostId = id;
-    showPage('detail');
+// ==================== 分页组件 ====================
+function renderPagination(total, limit, currentPage, containerId, callback) {
+    const totalPages = Math.ceil(total / limit);
+    const container = $(containerId);
+
+    if (totalPages <= 1) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'flex';
+
+    let html = `<button onclick="${callback.name}(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+
+    // 显示页码，最多显示5个
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+
+    for (let i = start; i <= end; i++) {
+        html += `<button onclick="${callback.name}(${i})" class="${i === currentPage ? 'current-page' : ''}">${i}</button>`;
+    }
+
+    html += `<button onclick="${callback.name}(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+    html += `<span class="page-info">共 ${total} 条，${totalPages} 页</span>`;
+
+    container.innerHTML = html;
 }
 
-async function loadPostDetail(id) {
+// ==================== 文章详情 ====================
+async function loadPostDetail(postId) {
+    currentPostId = postId;
+    $('post-content-area').innerHTML = '<div class="loading"><div class="spinner"></div> 加载中...</div>';
+    $('attachments-section').style.display = 'none';
+
     try {
-        const post = await apiGet(`/posts/${id}`);
-        document.getElementById('detailTitle').textContent = post.title;
-        document.getElementById('detailMeta').innerHTML = `👤 ${escapeHtml(post.author || '未知')} · 🕐 ${formatDate(post.created_at)} · ✏️ ${formatDate(post.updated_at)}`;
-        document.getElementById('detailContent').textContent = post.content;
+        const post = await api(`/posts/${postId}`);
+        // 注意后端返回的是数组或对象，兼容处理
+        const data = Array.isArray(post) ? post[0] : post;
 
-        const isAuthor = currentUser && post.author === currentUser.username;
-        document.getElementById('detailActions').innerHTML = isAuthor ? `
-            <button class="btn btn-primary btn-sm" onclick="showEditPost(${post.id})">编辑</button>
-            <button class="btn btn-danger btn-sm" onclick="handleDeletePost(${post.id})">删除</button>
-        ` : '';
-        document.getElementById('detailUploadArea').style.display = isAuthor ? 'block' : 'none';
+        const isOwner = currentUser && data.user_id === currentUser.id;
 
-        document.getElementById('uploadError').textContent = '';
-        document.getElementById('uploadSuccess').textContent = '';
+        $('post-content-area').innerHTML = `
+            <h1>${escapeHtml(data.title)}</h1>
+            <div class="meta">
+                <span>👤 ${escapeHtml(data.author)}</span>
+                <span>📅 ${formatDate(data.created_at)}</span>
+                ${data.category_name ? `<span class="category-tag">${escapeHtml(data.category_name)}</span>` : ''}
+                ${currentToken ? `
+                    <span style="margin-left:auto">
+                        <button class="btn btn-secondary" onclick="event.stopPropagation(); router('edit-post', ${data.id})" style="padding:0.25rem 0.75rem; font-size:0.875rem">编辑</button>
+                        <button class="btn btn-danger" onclick="event.stopPropagation(); deletePost(${data.id})" style="padding:0.25rem 0.75rem; font-size:0.875rem; margin-left:0.5rem">删除</button>
+                    </span>
+                ` : ''}
+            </div>
+            <div class="post-content">${escapeHtml(data.content)}</div>
+        `;
 
-        loadPostImages(id);
+        // 加载附件
+        loadAttachments(postId, 1);
+        $('attachments-section').style.display = 'block';
     } catch (e) {
-        alert('加载文章失败: ' + e.message);
-        showPage('list');
+        $('post-content-area').innerHTML = '<div class="empty-state">文章不存在或加载失败</div>';
     }
 }
 
-async function loadPostImages(postId) {
-    const container = document.getElementById('detailImages');
+async function deletePost(postId) {
+    if (!confirm('确定要删除这篇文章吗？')) return;
     try {
-        const images = await apiGet(`/posts/${postId}/attachments`);
-        if (!images || images.length === 0) {
-            container.innerHTML = '<div style="color:#b2bec3;font-size:13px">暂无图片</div>';
+        await api(`/posts/${postId}`, { method: 'DELETE' });
+        showToast('删除成功');
+        router('home');
+    } catch (e) {}
+}
+
+// ==================== 编辑器 ====================
+async function loadPostForEdit(postId) {
+    try {
+        const post = await api(`/posts/${postId}`);
+        const data = Array.isArray(post) ? post[0] : post;
+
+        $('post-id').value = data.id;
+        $('post-title').value = data.title;
+        $('post-content').value = data.content;
+
+        await loadCategoriesForSelect();
+        $('post-category').value = data.category_id || '';
+
+        $('upload-section').style.display = 'block';
+        loadEditorAttachments(postId, 1);
+    } catch (e) {
+        showToast('加载文章失败', 'error');
+    }
+}
+
+async function savePost(e) {
+    e.preventDefault();
+    const postId = $('post-id').value;
+    const payload = {
+        title: $('post-title').value,
+        content: $('post-content').value,
+        category_id: $('post-category').value ? parseInt($('post-category').value) : null
+    };
+
+    try {
+        if (postId) {
+            await api(`/posts/${postId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            showToast('更新成功');
+            router('detail', parseInt(postId));
+        } else {
+            const res = await api('/posts', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            showToast('发布成功');
+            router('detail', res.id);
+        }
+    } catch (e) {}
+}
+
+// ==================== 附件管理 ====================
+async function loadAttachments(postId, page = 1) {
+    const limit = 8;
+    const skip = (page - 1) * limit;
+
+    try {
+        const data = await api(`/post/${postId}/attachments?skip=${skip}&limit=${limit}`);
+        const container = $('attachments-list');
+
+        if (!data.data || data.data.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-secondary); grid-column:1/-1">暂无附件</p>';
+            $('attach-pagination').style.display = 'none';
             return;
         }
-        container.innerHTML = images.map(img => `
-            <div class="image-item">
-                <img src="${API_BASE}${img.url}" alt="${escapeHtml(img.original_name)}" onclick="window.open('${API_BASE}${img.url}')">
-                ${currentUser ? `<button class="image-delete" onclick="event.stopPropagation();deleteImage(${img.id})" title="删除">×</button>` : ''}
+
+        container.innerHTML = data.data.map(att => `
+            <div class="attachment-item">
+                <img src="${API_BASE}${att.url}" alt="${escapeHtml(att.original_name)}"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23999%22 stroke-width=%222%22><rect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%222%22/><circle cx=%228.5%22 cy=%228.5%22 r=%221.5%22/><path d=%22M21 15l-5-5L5 21%22/></svg>'">
+                <div class="attachment-info">${escapeHtml(att.original_name)}<br>${formatSize(att.file_size)}</div>
             </div>
         `).join('');
-    } catch (e) {
-        container.innerHTML = '<div style="color:#e84393;font-size:13px">加载图片失败: ' + e.message + '</div>';
-    }
+
+        renderPagination(data.total, limit, page, 'attach-pagination', (p) => loadAttachments(postId, p));
+    } catch (e) {}
 }
 
-function showCreatePost() {
-    editingPostId = null;
-    document.getElementById('editTitle').textContent = '写文章';
-    document.getElementById('editPostTitle').value = '';
-    document.getElementById('editPostContent').value = '';
-    document.getElementById('editError').textContent = '';
-    showPage('edit');
-}
-
-function showEditPost(id) {
-    const post = postsCache.find(p => p.id === id);
-    if (!post) return;
-    editingPostId = id;
-    document.getElementById('editTitle').textContent = '编辑文章';
-    document.getElementById('editPostTitle').value = post.title;
-    document.getElementById('editPostContent').value = post.content;
-    document.getElementById('editError').textContent = '';
-    showPage('edit');
-}
-
-async function handleSavePost() {
-    const title = document.getElementById('editPostTitle').value.trim();
-    const content = document.getElementById('editPostContent').value.trim();
-    const errorEl = document.getElementById('editError');
-
-    if (!title || !content) {
-        errorEl.textContent = '标题和内容不能为空';
-        return;
-    }
+async function loadEditorAttachments(postId, page = 1) {
+    const limit = 8;
+    const skip = (page - 1) * limit;
 
     try {
-        if (editingPostId) {
-            await apiPut(`/posts/${editingPostId}`, { title, content });
-        } else {
-            await apiPost('/posts', { title, content });
+        const data = await api(`/post/${postId}/attachments?skip=${skip}&limit=${limit}`);
+        const container = $('editor-attachments');
+
+        if (!data.data || data.data.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-secondary); grid-column:1/-1">暂无图片</p>';
+            return;
         }
-        await loadPosts();
-        showPage('list');
-    } catch (e) {
-        errorEl.textContent = e.message;
-    }
+
+        container.innerHTML = data.data.map(att => `
+            <div class="attachment-item">
+                <button class="attachment-delete" onclick="deleteAttachment(${att.id})" title="删除">×</button>
+                <img src="${API_BASE}${att.url}" alt="${escapeHtml(att.original_name)}"
+                     onerror="this.style.display='none'">
+                <div class="attachment-info">${escapeHtml(att.original_name)}<br>${formatSize(att.file_size)}</div>
+            </div>
+        `).join('');
+    } catch (e) {}
 }
 
-async function handleDeletePost(id) {
-    if (!confirm('确定要删除这篇文章吗？关联的图片也会被删除。')) return;
-    try {
-        await apiDelete(`/posts/${id}`);
-        await loadPosts();
-        showPage('list');
-    } catch (e) {
-        alert('删除失败: ' + e.message);
-    }
-}
-
-// ==================== 图片上传 & 删除 ====================
-async function handleUploadImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-        document.getElementById('uploadError').textContent = '不支持的文件类型，仅允许 jpg/png/gif/webp';
-        event.target.value = '';
-        return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-        document.getElementById('uploadError').textContent = '文件过大，最大允许 5MB';
-        event.target.value = '';
-        return;
-    }
+async function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file || !currentPostId) return;
 
     const formData = new FormData();
     formData.append('file', file);
 
-    document.getElementById('uploadLoading').style.display = 'flex';
-    document.getElementById('uploadError').textContent = '';
-    document.getElementById('uploadSuccess').textContent = '';
-
     try {
-        const result = await apiPost(`/posts/${currentPostId}/upload`, formData, false);
-        document.getElementById('uploadSuccess').textContent = `上传成功: ${result.filename}`;
-        event.target.value = '';
-        loadPostImages(currentPostId);
-    } catch (e) {
-        document.getElementById('uploadError').textContent = '上传失败: ' + e.message;
-    } finally {
-        document.getElementById('uploadLoading').style.display = 'none';
-    }
+        await api(`/post/${currentPostId}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        showToast('上传成功');
+        loadEditorAttachments(currentPostId, 1);
+        // 刷新详情页附件
+        if ($('page-detail').classList.contains('active')) {
+            loadAttachments(currentPostId, 1);
+        }
+    } catch (e) {}
 }
 
-async function deleteImage(attachmentId) {
+async function deleteAttachment(attachmentId) {
     if (!confirm('确定删除这张图片吗？')) return;
     try {
-        await apiDelete(`/attachments/${attachmentId}`);
-        loadPostImages(currentPostId);
-    } catch (e) {
-        alert('删除失败: ' + e.message);
-    }
+        await api(`/attachments/${attachmentId}`, { method: 'DELETE' });
+        showToast('删除成功');
+        loadEditorAttachments(currentPostId, 1);
+    } catch (e) {}
 }
+
+// 拖拽上传
+$('upload-area').addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('dragover');
+});
+$('upload-area').addEventListener('dragleave', (e) => {
+    e.currentTarget.classList.remove('dragover');
+});
+$('upload-area').addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const input = $('file-input');
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        handleFileSelect({ target: input });
+    }
+});
 
 // ==================== 工具函数 ====================
 function escapeHtml(text) {
@@ -802,9 +963,22 @@ function formatDate(dateStr) {
     return d.toLocaleString('zh-CN');
 }
 
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
 // ==================== 初始化 ====================
-renderNav();
-checkAuth();
+if (currentToken) {
+    // 尝试解析用户信息（简单处理）
+    try {
+        const payload = JSON.parse(atob(currentToken.split('.')[1]));
+        currentUser = { id: payload.sub }; // 实际应该用 sub 或 user_id
+    } catch (e) {}
+}
+
+router('home');
 </script>
 
 </body>

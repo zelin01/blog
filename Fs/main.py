@@ -20,6 +20,7 @@ from contextlib import contextmanager
 import redis
 import json
 from pydantic_core.core_schema import field_after_validator_function
+from fastapi import Query
 
 #创建FastAPI应用
 app = FastAPI()
@@ -253,9 +254,16 @@ def generate_unique_filename(original_name: str) -> None:
 
 # 清理redis缓存
 def clear_post_cache(post_id: int):
+    # 删除单篇文章
     redis_client.delete("posts/{post_id}")
-    redis_client.delete("posts:list")
-    redis_client.delete(f"attachments:post:{post_id}")
+
+    # 删除该文章附件相关内容
+    for key in redis_client.scan_iter(match=f"attachments:post:{post_id}:*"):
+        redis_client.delete(key)
+
+    # 删除所有文章列表缓存（增删改查惠影响列表）
+    for key in redis_client.scan_iter(match="posts:list:*"):
+        redis_client.delete(key)
 
 #pydantic 数据模型
 #用于请求参数校验和响应列化
@@ -273,6 +281,15 @@ class UserRegister(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class PaginationParams:
+    def __init__(
+            self,
+            skip: int = Query(0, ge = 0, description="跳过的条数"),
+            limit: int = Query(10, ge = 1, le = 100, description="每页条数，最大100")
+    ):
+        self.skip = skip
+        self.limit = limit
 
 #用户注册接口
 @app.post("/register")
@@ -338,37 +355,56 @@ def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_cu
 
 # 拉取文章列表，支持按分类过滤
 @app.get("/posts")
-def get_posts(category_id: optional[int] = None,db=Depends(get_db_conn)):
-    cache_key = f"posts:list:cat:{category_id}" if category_id else "posts:list"
-    # 尝试从redis 缓存获取
-    cached = redis_client.get("posts:list")
-    if cached:
-        return json.loads(cached)
-    conn, cursor = db
+def get_posts(category_id: Optional[int] = None,
+              page: PaginationParams = Depends(),
+              db=Depends(get_db_conn)
+              ):
+        skip, limit = page.skip, page.limit
+        cache_key = f"posts:list:cat:{category_id}" if category_id else "posts:list"
+        # 尝试从redis 缓存获取
+        cached = redis_client.get("posts:list")
+        if cached:
+            return json.loads(cached)
+        conn, cursor = db
 
-    #缓存未命中，查询数据库
-    if category_id:
-        cursor.execute("""
-                       SELECT p.*, u.username as author, c.name as category_name
-                       FROM posts p
-                       JOIN users u ON p.user_id = u.id
-                       LEFT JOIN categories c ON p.category_id = c.id
-                       WHERE p.category_id = %s
-                       ORDER BY p.created_at DESC
-                       """, (category_id,))
-    else:
-        cursor.execute("""
-                       SELECT p.*, u.username as author, c.name as category_name
-                       FROM posts p
-                       JOIN users u ON p.user_id = u.id
-                       LEFT JOIN categories c ON p.category_id = c.id
-                       ORDER BY p.created_at DESC
-                       """)
-    rows = cursor.fetchall()
+        if category_id:
+            cursor.execute("SELECT COUNT(*) as total FROM posts WHERE category_id = %s", (category_id,))
+        else:
+            cursor.execute("SELECT COUNT(*) as total FROM posts")
+        total = cursor.fetchone()["total"]
 
-    #写入 Redis 缓存， 设置5 分钟过期时间
-    redis_client.setex("posts:list",300, json.dumps(rows, default=str))
-    return rows
+        # 缓存未命中，查询数据库
+        if category_id:
+            cursor.execute("""
+                           SELECT p.*, u.username as author, c.name as category_name
+                           FROM posts p JOIN users u ON p.user_id = u.id
+                           LEFT JOIN categories c ON p.category_id = c.id
+                           WHERE p.category_id = %s
+                           ORDER BY p.created_at DESC
+                           LIMIT %s OFFSET %s
+                           """, (category_id, limit, skip))
+        else:
+            cursor.execute("""
+                           SELECT p.*, u.username as author, c.name as category_name
+                           FROM posts p
+                           JOIN users u ON p.user_id = u.id
+                           LEFT JOIN categories c ON p.category_id = c.id
+                           ORDER BY p.created_at DESC
+                           LIMIT %s OFFSET %s
+                           """, (limit, skip))
+        rows = cursor.fetchall()
+
+        result = {
+            "total": total,
+            "skip": skip,
+            "limit": limit,
+            "data": rows
+        }
+
+        # 写入 Redis 缓存， 设置5 分钟过期时间
+        redis_client.setex("posts:list", 300, json.dumps(rows, default=str))
+        return result
+
 
 #获取单篇文章
 @app.get("/posts/{post_id}")
@@ -510,28 +546,42 @@ async def upload_image(
 
 # 获取文章的所有附件
 @app.get("/post/{post_id}/attachments")
-def get_post_attchments(post_id: int, db=Depends(get_db_conn)):
-    cache_key = f"attachments:post:{post_id}"
+def get_post_attachments(post_id: int,
+                         page: PaginationParams = Depends(),
+                         db=Depends(get_db_conn)
+                         ):
+    skip, limit = page.skip, page.limit
+    cache_key = f"attachments:post:{post_id}:skip:{skip}:limit:{limit}"
     cached = redis_client.get(cache_key)
     if cached:
         return json.loads(cached)
 
     conn, cursor = db
+
+    cursor.execute("SELECT COUNT(*) as total FROM attachments WHERE post_id = %s", (post_id,))
+    total = cursor.fetchone()["total"]
+
     cursor.execute("""
-                   SELECT id, original_name, stored_name, file_size, content_type, created_at
-                   FROM attachments
-                   WHERE post_id = %s
-                   ORDER BY created_at ASC
-                   """, (post_id,))
+        SELECT id, original_name, stored_name, file_size, content_type, created_at
+        FROM attachments
+        WHERE post_id = %s
+        ORDER BY created_at ASC
+        LIMIT %s OFFSET %s
+    """, (post_id, limit, skip))
     rows = cursor.fetchall()
 
-    # 拼接完整访问 URL
     for row in rows:
         row["url"] = f"/uploads/{row['stored_name']}"
 
-    redis_client.setex(cache_key, 300, json.dumps(rows, default=str))
+    result = {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "data": rows
+    }
 
-    return rows
+    redis_client.setex(cache_key, 300, json.dumps(rows, default=str))
+    return result
 
 # 删除上传图片
 @app.delete("/attachments/{attachment_id}")
