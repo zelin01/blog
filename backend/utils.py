@@ -22,6 +22,13 @@ def generate_unique_filename(original_name: str) -> None:
 
 # 清理redis缓存
 def clear_post_cache(post_id: int):
+    # 删除单篇文章
     redis_client.delete("posts/{post_id}")
-    redis_client.delete("posts:list")
-    redis_client.delete(f"attachments:post:{post_id}")
+
+    # 删除该文章附件相关内容
+    for key in redis_client.scan_iter(match=f"attachments:post:{post_id}:*"):
+        redis_client.delete(key)
+
+    # 删除所有文章列表缓存（增删改查惠影响列表）
+    for key in redis_client.scan_iter(match="posts:list:*"):
+        redis_client.delete(key)

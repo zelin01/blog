@@ -5,6 +5,8 @@ import shutil
 import json
 from database import get_db_conn
 from auth import get_current_user
+from schemas import PaginationParams
+from sqlalchemy.testing import skip
 from utils import validate_image, generate_unique_filename, clear_post_cache
 from config import UPLOAD_DIR, redis_client
 
@@ -59,26 +61,42 @@ async def upload_image(
     }
 
 @router.get("/post/{post_id}/attachments")
-def get_post_attachments(post_id: int, db=Depends(get_db_conn)):
-    cache_key = f"attachments:post:{post_id}"
+def get_post_attachments(post_id: int,
+                         page: PaginationParams = Depends(),
+                         db=Depends(get_db_conn)
+                         ):
+    skip, limit = page.skip, page.limit
+    cache_key = f"attachments:post:{post_id}:skip:{skip}:limit:{limit}"
     cached = redis_client.get(cache_key)
     if cached:
         return json.loads(cached)
 
     conn, cursor = db
+
+    cursor.execute("SELECT COUNT(*) as total FROM attachments WHERE post_id = %s", (post_id,))
+    total = cursor.fetchone()["total"]
+
     cursor.execute("""
         SELECT id, original_name, stored_name, file_size, content_type, created_at
         FROM attachments
         WHERE post_id = %s
         ORDER BY created_at ASC
-    """, (post_id,))
+        LIMIT %s OFFSET %s
+    """, (post_id, limit, skip))
     rows = cursor.fetchall()
 
     for row in rows:
         row["url"] = f"/uploads/{row['stored_name']}"
 
+    result = {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "data": rows
+    }
+
     redis_client.setex(cache_key, 300, json.dumps(rows, default=str))
-    return rows
+    return result
 
 @router.delete("/attachments/{attachment_id}")
 def delete_attachment(

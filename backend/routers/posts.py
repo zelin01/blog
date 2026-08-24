@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 from database import get_db_conn
 from auth import get_current_user
-from schemas import Post
+from schemas import Post, PaginationParams
 from utils import clear_post_cache
 from config import redis_client
 
@@ -34,13 +34,23 @@ def create_post(post: Post, db=Depends(get_db_conn), current_user=Depends(get_cu
 
 # 拉取文章列表，支持按分类过滤
 @router.get("/posts")
-def get_posts(category_id: Optional[int] = None,db=Depends(get_db_conn)):
+def get_posts(category_id: Optional[int] = None,
+              page: PaginationParams = Depends(),
+              db=Depends(get_db_conn)
+              ):
+    skip, limit = page.skip, page.limit
     cache_key = f"posts:list:cat:{category_id}" if category_id else "posts:list"
     # 尝试从redis 缓存获取
     cached = redis_client.get("posts:list")
     if cached:
         return json.loads(cached)
     conn, cursor = db
+
+    if category_id:
+        cursor.execute("SELECT COUNT(*) as total FROM posts WHERE category_id = %s", (category_id,))
+    else:
+        cursor.execute("SELECT COUNT(*) as total FROM posts")
+    total = cursor.fetchone()["total"]
 
     #缓存未命中，查询数据库
     if category_id:
@@ -51,7 +61,8 @@ def get_posts(category_id: Optional[int] = None,db=Depends(get_db_conn)):
                        LEFT JOIN categories c ON p.category_id = c.id
                        WHERE p.category_id = %s
                        ORDER BY p.created_at DESC
-                       """, (category_id,))
+                       LIMIT %s OFFSET %s
+                       """, (category_id, limit, skip))
     else:
         cursor.execute("""
                        SELECT p.*, u.username as author, c.name as category_name
@@ -59,12 +70,20 @@ def get_posts(category_id: Optional[int] = None,db=Depends(get_db_conn)):
                        JOIN users u ON p.user_id = u.id
                        LEFT JOIN categories c ON p.category_id = c.id
                        ORDER BY p.created_at DESC
-                       """)
+                       LIMIT %s OFFSET %s
+                       """,(limit, skip))
     rows = cursor.fetchall()
+
+    result = {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "data": rows
+    }
 
     #写入 Redis 缓存， 设置5 分钟过期时间
     redis_client.setex("posts:list",300, json.dumps(rows, default=str))
-    return rows
+    return result
 
 #获取单篇文章
 @router.get("/posts/{post_id}")
@@ -153,3 +172,5 @@ def delete_post(post_id: int, db=Depends(get_db_conn), current_user=Depends(get_
 
     clear_post_cache(post_id)
     return {"message": "deleted", "id": post_id}
+
+
