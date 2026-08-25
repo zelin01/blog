@@ -55,22 +55,22 @@ def get_posts(category_id: Optional[int] = None,
     #缓存未命中，查询数据库
     if category_id:
         cursor.execute("""
-                       SELECT p.*, u.username as author, c.name as category_name
-                       FROM posts p
-                       JOIN users u ON p.user_id = u.id
-                       LEFT JOIN categories c ON p.category_id = c.id
-                       WHERE p.category_id = %s
-                       ORDER BY p.created_at DESC
-                       LIMIT %s OFFSET %s
+                        SELECT p.*, u.username as author, c.name as category_name
+                        FROM posts p
+                        JOIN users u ON p.user_id = u.id
+                        LEFT JOIN categories c ON p.category_id = c.id
+                        WHERE p.category_id = %s
+                        ORDER BY p.created_at DESC
+                        LIMIT %s OFFSET %s
                        """, (category_id, limit, skip))
     else:
         cursor.execute("""
-                       SELECT p.*, u.username as author, c.name as category_name
-                       FROM posts p
-                       JOIN users u ON p.user_id = u.id
-                       LEFT JOIN categories c ON p.category_id = c.id
-                       ORDER BY p.created_at DESC
-                       LIMIT %s OFFSET %s
+                        SELECT p.*, u.username as author, c.name as category_name
+                        FROM posts p
+                        JOIN users u ON p.user_id = u.id
+                        LEFT JOIN categories c ON p.category_id = c.id
+                        ORDER BY p.created_at DESC
+                        LIMIT %s OFFSET %s
                        """,(limit, skip))
     rows = cursor.fetchall()
 
@@ -95,11 +95,11 @@ def get_post(post_id: int, db=Depends(get_db_conn)):
     conn, cursor = db
 
     cursor.execute("""
-                   SELECT p.*, u.username as author, c.name as category_name
-                   FROM posts p
-                   JOIN users u ON p.user_id = u.id
-                   LEFT  JOIN categories c ON p.category_id = c.id
-                   WHERE p.id = %s
+                    SELECT p.*, u.username as author, c.name as category_name
+                    FROM posts p
+                    JOIN users u ON p.user_id = u.id
+                    LEFT  JOIN categories c ON p.category_id = c.id
+                    WHERE p.id = %s
                    """, (post_id,))
     row = cursor.fetchall()
 

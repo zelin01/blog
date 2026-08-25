@@ -57,25 +57,25 @@ def init_db():
     with get_db() as (conn, cursor): # 进入with块，获取数据库连接和游标
         #创建用户表
         cursor.execute("""
-                       CREATE TABLE IF NOT EXISTS users
+                        CREATE TABLE IF NOT EXISTS users
                        (
-                           id INT AUTO_INCREMENT PRIMARY KEY,
-                           username VARCHAR (255) UNIQUE NOT NULL,
-                           hashed_password VARCHAR(255) NOT NULL,
-                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        username VARCHAR (255) UNIQUE NOT NULL,
+                        hashed_password VARCHAR(255) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                        """)
         #创建文章表
         cursor.execute("""
-                       CREATE TABLE IF NOT EXISTS posts
+                        CREATE TABLE IF NOT EXISTS posts
                        (
-                           id INT AUTO_INCREMENT PRIMARY KEY,
-                           title VARCHAR (255) NOT NULL,
-                           content TEXT NOT NULL,
-                           user_id INT NOT NULL,
-                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) 
-                           ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        title VARCHAR (255) NOT NULL,
+                        content TEXT NOT NULL,
+                        user_id INT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE) 
+                        ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                        """)
         cursor.execute(""" 
                         CREATE TABLE IF NOT EXISTS attachments (
@@ -94,13 +94,13 @@ def init_db():
                         ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                         """)
         cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS categories (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR (50) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY uk_name (name))
-                    ENGINE = innoDB DEFAULT CHARSET=utf8mb4
-        """)
+                        CREATE TABLE IF NOT EXISTS categories (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR (50) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE KEY uk_name (name))
+                        ENGINE = innoDB DEFAULT CHARSET=utf8mb4
+                        """)
         cursor.execute("""
                        SELECT COUNT(*) as cnt
                        FROM information_schema.COLUMNS
@@ -117,8 +117,8 @@ def init_db():
                            ON DELETE SET NULL
                            """)
         cursor.execute("""
-                       INSERT IGNORE INTO categories (name)
-                       VALUES ('技术'), ('生活'), ('随笔')
+                        INSERT IGNORE INTO categories (name)
+                        VALUES ('技术'), ('生活'), ('随笔')
                        """)
         conn.commit()
     print("数据库初始化完成")
