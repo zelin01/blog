@@ -5,13 +5,8 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# apt 先用官方源（慢但稳，构建一次后就有缓存了）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# pip 换清华源，装依赖飞快
-COPY backend/requirements.txt ./requirements.txt
+# 只换 pip 源，apt 不动它。amd64 上这些包都有预编译 wheel，不需要 gcc
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
