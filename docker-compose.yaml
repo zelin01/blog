@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: blog_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass123
+      MYSQL_DATABASE: blog_db
+      MYSQL_USER: bloguser
+      MYSQL_PASSWORD: blogpass123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -prootpass123 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: blog_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blog_app
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: bloguser
+      DB_PASSWORD: blogpass123
+      DB_NAME: blog_db
+      SECRET_KEY: change-this-to-a-strong-key
+      TOKEN_EXPIRE: 30
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/static:/app/static
+    ports:
+      - "8000:8000"
+
+volumes:
+  mysql_data:
+  redis_data:
